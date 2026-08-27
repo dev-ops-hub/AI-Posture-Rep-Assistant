@@ -54,18 +54,28 @@ This project implements a multi-agent AI system for real-time workout tracking, 
 ## 3. Project File Structure
 ```text
 AI-Posture-Rep-Assistant/
-├── main.py                # Main OpenCV loop and orchestrator (desktop mode)
+├── main.py                # Main OpenCV loop and orchestrator (desktop mode, stays in root)
 ├── requirements.txt       # Python dependencies
-├── pyproject.toml         # Pytest configuration
-├── verify_setup.py        # Component verification script
-├── agents/
+├── pyproject.toml         # Pytest config + packaging (editable install of server/agents)
+├── server/                # Backend agent code + verification script
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── models.py          # Shared agent payload data classes
+│   │   ├── vision_agent.py    # Agent 1: pose tracking, angles, squat FSM
+│   │   ├── audit_agent.py     # Agent 2: OpenAI vision audit with fallback
+│   │   ├── coach_agent.py     # Agent 3: session summary with fallback
+│   │   └── voice_agent.py     # Agent 4: real-time audio coaching
+│   └── verify_setup.py    # Component verification script
+├── tests/                 # Test suite (top-level, kept alongside main.py/webapp)
 │   ├── __init__.py
-│   ├── models.py          # Shared agent payload data classes
-│   ├── vision_agent.py    # Agent 1: pose tracking, angles, squat FSM
-│   ├── audit_agent.py     # Agent 2: OpenAI vision audit with fallback
-│   ├── coach_agent.py     # Agent 3: session summary with fallback
-│   └── voice_agent.py     # Agent 4: real-time audio coaching
-├── webapp/                # Browser control panel (NEW)
+│   ├── test_models.py     # Data model tests (6 tests)
+│   ├── test_vision_agent.py # Vision/pose tests (19 tests)
+│   ├── test_audit_agent.py  # Audit agent tests (9 tests)
+│   ├── test_coach_agent.py  # Coach agent tests (12 tests)
+│   ├── test_voice_agent.py  # Voice agent tests (23 tests)
+│   ├── test_main.py       # HUD rendering tests (5 tests)
+│   └── test_webapp_session_manager.py # Web session lifecycle tests (6 tests)
+├── webapp/                # Browser control panel (unchanged location)
 │   ├── __init__.py
 │   ├── app.py             # Flask routes: start/pause/stop/quit, status, MJPEG stream
 │   ├── session_manager.py # WorkoutSessionManager state machine wrapping the 4 agents
@@ -74,15 +84,6 @@ AI-Posture-Rep-Assistant/
 │   └── static/
 │       ├── style.css      # Dark theme, responsive video panel (object-fit: contain)
 │       └── app.js         # Polling, button handlers, report rendering
-├── tests/
-│   ├── __init__.py
-│   ├── test_models.py     # Data model tests (6 tests)
-│   ├── test_vision_agent.py # Vision/pose tests (19 tests)
-│   ├── test_audit_agent.py  # Audit agent tests (9 tests)
-│   ├── test_coach_agent.py  # Coach agent tests (12 tests)
-│   ├── test_voice_agent.py  # Voice agent tests (23 tests)
-│   ├── test_main.py       # HUD rendering tests (5 tests)
-│   └── test_webapp_session_manager.py # Web session lifecycle tests (6 tests, NEW)
 ├── .env.example           # Environment configuration template
 ├── .gitignore             # Git ignore patterns
 ├── agent.md               # Agent architecture documentation
@@ -100,16 +101,16 @@ AI-Posture-Rep-Assistant/
 ### Task 1: Python Environment & Vision Agent Setup
 - [x] Define Python dependencies in `requirements.txt`.
 - [x] Build `cv2.VideoCapture(0)` loop in `main.py`.
-- [x] Initialize `mediapipe.solutions.pose` in `agents/vision_agent.py` and draw landmarks onto frames.
+- [x] Initialize `mediapipe.solutions.pose` in `server/agents/vision_agent.py` and draw landmarks onto frames.
 
 ### Task 2: Rep Engine & Posture Detection
-- [x] Implement angle math in `agents/vision_agent.py` for knee and spine calculations.
+- [x] Implement angle math in `server/agents/vision_agent.py` for knee and spine calculations.
 - [x] Implement squat finite state transitions based on knee-angle thresholds.
 - [x] Track posture violation duration and surface a visible HUD alert when the threshold is exceeded.
 
 ### Task 3: Multi-Agent Handoff & OpenAI Integration
-- [x] Write `agents/audit_agent.py` to encode posture events and call `gpt-4o` when configured.
-- [x] Write `agents/coach_agent.py` to calculate MET calories and build the session summary.
+- [x] Write `server/agents/audit_agent.py` to encode posture events and call `gpt-4o` when configured.
+- [x] Write `server/agents/coach_agent.py` to calculate MET calories and build the session summary.
 - [x] Dispatch posture audits on a background thread from `main.py` to avoid blocking the video loop.
 
 ### Task 4: UI Overlay & Testing
@@ -118,7 +119,7 @@ AI-Posture-Rep-Assistant/
 - [x] Validate the full webcam flow on a machine with the required Python packages and camera access.
 
 ### Task 5: Voice Feedback System (NEW)
-- [x] Implement `agents/voice_agent.py` with background threading for non-blocking TTS.
+- [x] Implement `server/agents/voice_agent.py` with background threading for non-blocking TTS.
 - [x] Add contextual voice announcements for workout start, reps, posture alerts, and session end.
 - [x] Integrate voice feedback into main application loop.
 - [x] Add environment variables for voice control (`VOICE_ENABLED`, `VOICE_RATE`, `VOICE_VOLUME`).
@@ -156,40 +157,61 @@ AI-Posture-Rep-Assistant/
 - [x] Add `tests/test_webapp_session_manager.py` (6 tests) covering the full lifecycle with a
       mocked camera.
 
+### Task 9: Backend Reorganization into `server/` (NEW)
+- [x] Move `agents/`, `tests/`, and `verify_setup.py` into a new `server/` folder
+      (`server/agents/`, `server/tests/`, `server/verify_setup.py`); `main.py` stays in the
+      repo root and `webapp/` is left completely untouched.
+- [x] Configure `pyproject.toml` with `[tool.setuptools.packages.find] where = ["server"]` so
+      `uv pip install -e .` installs `agents` as an editable, globally importable package —
+      keeping `from agents import ...` working unchanged in `main.py` and every file under
+      `webapp/`.
+- [x] Update `pyproject.toml` pytest config: `testpaths = ["server/tests"]` and
+      `pythonpath = [".", "server"]` (redundant safety net alongside the editable install).
+- [x] Verify `uv run pytest`, `uv run main.py`, `uv run python -m webapp.app`, and
+      `uv run python server/verify_setup.py` all still work after the move.
+
+### Task 10: Move `tests/` Back to the Repo Root (NEW)
+- [x] Move `server/tests/` back to a top-level `tests/` folder (`agents/` and `verify_setup.py`
+      remain under `server/`).
+- [x] Update `pyproject.toml`: `testpaths = ["tests"]` (the `pythonpath = [".", "server"]`
+      setting still applies, so `agents` and `webapp` both resolve correctly for the test suite).
+- [x] Re-verify `uv run pytest`, `uv run main.py`, `uv run python server/verify_setup.py`, and
+      `uv run python -m webapp.app` all continue to work.
+
 ---
 
 ## 5. Testing Infrastructure
 
 ### Test Coverage Summary
 - **Total Tests:** 80 passing
-- **Overall Coverage:** 74% (`agents/` + `main.py`; `webapp/` has its own dedicated test file)
-- **Test Files:** 7 (models, vision, audit, coach, voice, main, webapp session manager)
+- **Overall Coverage:** 74% (`agents/` package, physically located at `server/agents/`, + `main.py`; `webapp/` has its own dedicated test file)
+- **Test Files:** 7, located in `tests/` at the repo root (models, vision, audit, coach, voice, main, webapp session manager)
 
 ### Module Coverage Breakdown
 | Module | Coverage | Tests | Status |
 |--------|----------|-------|--------|
-| agents/models.py | 100% | 6 | ✅ Complete |
-| agents/audit_agent.py | 100% | 9 | ✅ Complete |
-| agents/coach_agent.py | 100% | 12 | ✅ Complete |
-| agents/__init__.py | 100% | - | ✅ Complete |
-| agents/voice_agent.py | 79% | 23 | ✅ Complete |
-| agents/vision_agent.py | 81% | 19 | ✅ Complete |
+| server/agents/models.py | 100% | 6 | ✅ Complete |
+| server/agents/audit_agent.py | 100% | 9 | ✅ Complete |
+| server/agents/coach_agent.py | 100% | 12 | ✅ Complete |
+| server/agents/__init__.py | 100% | - | ✅ Complete |
+| server/agents/voice_agent.py | 79% | 23 | ✅ Complete |
+| server/agents/vision_agent.py | 81% | 19 | ✅ Complete |
 | main.py | 28% | 5 | ⚠️ Partial (webcam required) |
 | webapp/session_manager.py | — | 6 | ✅ Complete (mocked camera) |
 
 ### Running Tests
 ```bash
-# Run all tests
-uv run pytest tests/ -v
+# Run all tests (testpaths is set to tests in pyproject.toml)
+uv run pytest -v
 
 # Run with coverage
-uv run pytest tests/ --cov=agents --cov=main
+uv run pytest --cov=agents --cov=main
 
 # Run only the web frontend tests
 uv run pytest tests/test_webapp_session_manager.py -v
 
 # Verify setup (no webcam needed)
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 ```
 
 ---
@@ -297,6 +319,10 @@ source .venv/bin/activate  # macOS/Linux
 # Install dependencies
 uv pip install -r requirements.txt
 
+# Editable install so `agents` (physically in server/agents/) is importable
+# from main.py, webapp/, and the test suite without any path changes
+uv pip install -e .
+
 # Configure environment
 cp .env.example .env
 # Edit .env with your settings
@@ -305,7 +331,7 @@ cp .env.example .env
 ### Run
 ```bash
 # Verify setup (no webcam)
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 
 # Run desktop app with webcam (OpenCV window)
 uv run main.py
@@ -314,8 +340,8 @@ uv run main.py
 uv run python -m webapp.app
 # then open http://localhost:5000
 
-# Run tests
-uv run pytest tests/ -v
+# Run tests (testpaths is set to tests in pyproject.toml)
+uv run pytest -v
 ```
 
 ---

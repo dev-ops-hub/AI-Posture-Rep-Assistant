@@ -247,7 +247,7 @@ class SessionSummaryPayload:
 
 ### Test Suite Overview
 - **Total Tests:** 80
-- **Overall Coverage:** 74% (`agents/` + `main.py`; `webapp/` has its own dedicated test file)
+- **Overall Coverage:** 74% (`agents/` package under `server/agents/`, plus `main.py`; `webapp/` has its own dedicated test file)
 - **Test Framework:** pytest with pytest-cov and pytest-mock
 
 ### Per-Agent Test Coverage
@@ -264,14 +264,14 @@ class SessionSummaryPayload:
 
 ### Running Tests
 ```bash
-# All tests with coverage
-uv run pytest tests/ -v --cov=agents --cov=main
+# All tests with coverage (testpaths is set to tests in pyproject.toml)
+uv run pytest -v --cov=agents --cov=main
 
 # Specific agent tests
 uv run pytest tests/test_voice_agent.py -v
 
 # Quick verification (no webcam)
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 ```
 
 ### Test Patterns
@@ -495,6 +495,9 @@ uv venv
 # Install dependencies
 uv pip install -r requirements.txt
 
+# Editable install so `agents` (server/agents) is importable everywhere
+uv pip install -e .
+
 # Configure
 cp .env.example .env
 # Edit .env with your settings
@@ -503,7 +506,7 @@ cp .env.example .env
 ### Execution
 ```bash
 # Verify setup (no webcam)
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 
 # Run with webcam (desktop OpenCV window)
 uv run main.py
@@ -512,8 +515,8 @@ uv run main.py
 uv run python -m webapp.app
 # then open http://localhost:5000
 
-# Run tests
-uv run pytest tests/ -v
+# Run tests (testpaths is set to tests in pyproject.toml)
+uv run pytest -v
 ```
 
 ### Platform-Specific Notes
