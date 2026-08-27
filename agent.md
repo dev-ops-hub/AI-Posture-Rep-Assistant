@@ -35,7 +35,7 @@ This application uses a hybrid edge-cloud **Python Multi-Agent Architecture** wi
 
 ### Agent 1: Edge Vision & Tracking Agent
 * **Runtime Environment:** Local Python Interpreter (`vision_agent.py`).
-* **Primary Libraries:** `mediapipe==0.10.9`, `numpy`, `opencv-python`.
+* **Primary Libraries:** `mediapipe==0.10.14`, `numpy`, `opencv-python`.
 * **Primary Responsibilities:**
   1. Capture video feed from camera at 30 FPS with 0 ms network delay.
   2. Extract 33 spatial keypoint coordinates via MediaPipe Pose.

@@ -4,7 +4,7 @@ Python multi-agent workout tracker for squat rep counting, posture fault detecti
 
 ## Requirements
 
-- **Python 3.11** (see `requires-python` in [pyproject.toml](pyproject.toml)). CPython 3.11.x is recommended, matching the pinned `mediapipe==0.10.9` dependency.
+- **Python 3.11 or 3.12** (see `requires-python` in [pyproject.toml](pyproject.toml)), matching the pinned `mediapipe==0.10.14` dependency.
 - A webcam for live tracking (not required to run the test suite).
 - [`uv`](https://docs.astral.sh/uv/) for dependency management (or substitute `pip`/`venv` commands manually).
 
@@ -110,7 +110,7 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 | :--- | :--- | :--- |
 | **Programming Language** | Python 3.11+ | Unified runtime for CV, logic, and LLM orchestration |
 | **Video Pipeline** | `opencv-python` | Webcam input, canvas drawing, frame output |
-| **Pose Detection** | `mediapipe==0.10.9` | 33 3D body keypoint tracking at 30+ FPS |
+| **Pose Detection** | `mediapipe==0.10.14` | 33 3D body keypoint tracking at 30+ FPS |
 | **Math & Geometry** | `numpy` | Vector operations for joint angle calculation |
 | **AI Coaching** | `openai` SDK | Multimodal form auditing and session summaries |
 | **Voice Feedback** | `pyttsx3` | Local offline text-to-speech for audio coaching |
@@ -150,7 +150,7 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 
 ## Setup
 
-Requires Python 3.11 — see [Requirements](#requirements).
+Requires Python 3.11 or 3.12 — see [Requirements](#requirements).
 
 **macOS / Linux:**
 ```bash
