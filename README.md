@@ -88,7 +88,7 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 ├── main.py                 # Desktop OpenCV entry point (stays in repo root)
 ├── requirements.txt
 ├── pyproject.toml           # Packaging + pytest config (makes `agents` importable everywhere)
-├── server/                  # All backend Python code (agents, tests, verification script)
+├── server/                  # Backend agent code + verification script
 │   ├── agents/
 │   │   ├── __init__.py
 │   │   ├── models.py
@@ -96,8 +96,8 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 │   │   ├── audit_agent.py
 │   │   ├── coach_agent.py
 │   │   └── voice_agent.py
-│   ├── tests/
 │   └── verify_setup.py
+├── tests/                   # Test suite (top-level, alongside main.py/webapp)
 ├── webapp/                  # Browser control panel (unchanged location)
 │   ├── app.py               # Flask server & REST API
 │   ├── session_manager.py   # Start/pause/resume/stop/quit state machine
@@ -248,7 +248,7 @@ This project includes comprehensive unit tests with **80 passing tests** and **7
 | `main.py` | 28% | 5 |
 | `webapp/session_manager.py` | — | 6 |
 
-*Note: `main.py` requires webcam access for full testing coverage. `webapp/session_manager.py` tests mock the camera so they run without hardware. Test files live in `server/tests/`; `pyproject.toml` configures pytest's `testpaths` accordingly.*
+*Note: `main.py` requires webcam access for full testing coverage. `webapp/session_manager.py` tests mock the camera so they run without hardware. Test files live in `tests/`; `pyproject.toml` configures pytest's `testpaths` accordingly.*
 
 ### Quick Verification
 
@@ -261,7 +261,7 @@ uv run python server/verify_setup.py
 ### Run Tests
 
 ```bash
-# Run all tests (testpaths is set to server/tests in pyproject.toml)
+# Run all tests (testpaths is set to tests in pyproject.toml)
 uv run pytest
 
 # Run with verbose output

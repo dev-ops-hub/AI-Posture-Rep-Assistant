@@ -57,7 +57,7 @@ AI-Posture-Rep-Assistant/
 ├── main.py                # Main OpenCV loop and orchestrator (desktop mode, stays in root)
 ├── requirements.txt       # Python dependencies
 ├── pyproject.toml         # Pytest config + packaging (editable install of server/agents)
-├── server/                # All backend Python code (NEW location)
+├── server/                # Backend agent code + verification script
 │   ├── agents/
 │   │   ├── __init__.py
 │   │   ├── models.py          # Shared agent payload data classes
@@ -65,16 +65,16 @@ AI-Posture-Rep-Assistant/
 │   │   ├── audit_agent.py     # Agent 2: OpenAI vision audit with fallback
 │   │   ├── coach_agent.py     # Agent 3: session summary with fallback
 │   │   └── voice_agent.py     # Agent 4: real-time audio coaching
-│   ├── verify_setup.py    # Component verification script
-│   └── tests/
-│       ├── __init__.py
-│       ├── test_models.py     # Data model tests (6 tests)
-│       ├── test_vision_agent.py # Vision/pose tests (19 tests)
-│       ├── test_audit_agent.py  # Audit agent tests (9 tests)
-│       ├── test_coach_agent.py  # Coach agent tests (12 tests)
-│       ├── test_voice_agent.py  # Voice agent tests (23 tests)
-│       ├── test_main.py       # HUD rendering tests (5 tests)
-│       └── test_webapp_session_manager.py # Web session lifecycle tests (6 tests)
+│   └── verify_setup.py    # Component verification script
+├── tests/                 # Test suite (top-level, kept alongside main.py/webapp)
+│   ├── __init__.py
+│   ├── test_models.py     # Data model tests (6 tests)
+│   ├── test_vision_agent.py # Vision/pose tests (19 tests)
+│   ├── test_audit_agent.py  # Audit agent tests (9 tests)
+│   ├── test_coach_agent.py  # Coach agent tests (12 tests)
+│   ├── test_voice_agent.py  # Voice agent tests (23 tests)
+│   ├── test_main.py       # HUD rendering tests (5 tests)
+│   └── test_webapp_session_manager.py # Web session lifecycle tests (6 tests)
 ├── webapp/                # Browser control panel (unchanged location)
 │   ├── __init__.py
 │   ├── app.py             # Flask routes: start/pause/stop/quit, status, MJPEG stream
@@ -170,6 +170,14 @@ AI-Posture-Rep-Assistant/
 - [x] Verify `uv run pytest`, `uv run main.py`, `uv run python -m webapp.app`, and
       `uv run python server/verify_setup.py` all still work after the move.
 
+### Task 10: Move `tests/` Back to the Repo Root (NEW)
+- [x] Move `server/tests/` back to a top-level `tests/` folder (`agents/` and `verify_setup.py`
+      remain under `server/`).
+- [x] Update `pyproject.toml`: `testpaths = ["tests"]` (the `pythonpath = [".", "server"]`
+      setting still applies, so `agents` and `webapp` both resolve correctly for the test suite).
+- [x] Re-verify `uv run pytest`, `uv run main.py`, `uv run python server/verify_setup.py`, and
+      `uv run python -m webapp.app` all continue to work.
+
 ---
 
 ## 5. Testing Infrastructure
@@ -177,7 +185,7 @@ AI-Posture-Rep-Assistant/
 ### Test Coverage Summary
 - **Total Tests:** 80 passing
 - **Overall Coverage:** 74% (`agents/` package, physically located at `server/agents/`, + `main.py`; `webapp/` has its own dedicated test file)
-- **Test Files:** 7, located in `server/tests/` (models, vision, audit, coach, voice, main, webapp session manager)
+- **Test Files:** 7, located in `tests/` at the repo root (models, vision, audit, coach, voice, main, webapp session manager)
 
 ### Module Coverage Breakdown
 | Module | Coverage | Tests | Status |
@@ -193,14 +201,14 @@ AI-Posture-Rep-Assistant/
 
 ### Running Tests
 ```bash
-# Run all tests (testpaths is set to server/tests in pyproject.toml)
+# Run all tests (testpaths is set to tests in pyproject.toml)
 uv run pytest -v
 
 # Run with coverage
 uv run pytest --cov=agents --cov=main
 
 # Run only the web frontend tests
-uv run pytest server/tests/test_webapp_session_manager.py -v
+uv run pytest tests/test_webapp_session_manager.py -v
 
 # Verify setup (no webcam needed)
 uv run python server/verify_setup.py
@@ -332,7 +340,7 @@ uv run main.py
 uv run python -m webapp.app
 # then open http://localhost:5000
 
-# Run tests (testpaths is set to server/tests in pyproject.toml)
+# Run tests (testpaths is set to tests in pyproject.toml)
 uv run pytest -v
 ```
 

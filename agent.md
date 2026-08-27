@@ -264,11 +264,11 @@ class SessionSummaryPayload:
 
 ### Running Tests
 ```bash
-# All tests with coverage (testpaths is set to server/tests in pyproject.toml)
+# All tests with coverage (testpaths is set to tests in pyproject.toml)
 uv run pytest -v --cov=agents --cov=main
 
 # Specific agent tests
-uv run pytest server/tests/test_voice_agent.py -v
+uv run pytest tests/test_voice_agent.py -v
 
 # Quick verification (no webcam)
 uv run python server/verify_setup.py
@@ -387,7 +387,7 @@ browser-based control panel built with **Flask**.
 - Pressing **Quit** in the browser calls `/api/quit`, which stops the session, shows the report if
   one was active, and shuts down the Flask server; the video feed and polling are stopped
   client-side once the server is confirmed gone.
-- **Test Coverage:** `server/tests/test_webapp_session_manager.py` (6 tests) covers the full
+- **Test Coverage:** `tests/test_webapp_session_manager.py` (6 tests) covers the full
   start/pause/resume/stop/quit lifecycle and report generation with a mocked camera.
 
 ---
@@ -515,7 +515,7 @@ uv run main.py
 uv run python -m webapp.app
 # then open http://localhost:5000
 
-# Run tests (testpaths is set to server/tests in pyproject.toml)
+# Run tests (testpaths is set to tests in pyproject.toml)
 uv run pytest -v
 ```
 
