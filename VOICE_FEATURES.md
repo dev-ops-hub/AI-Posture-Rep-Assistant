@@ -109,7 +109,7 @@ Posture alerts use priority speech, which:
 19 comprehensive tests cover all voice functionality:
 
 ```bash
-uv run pytest server/tests/test_voice_agent.py -v
+uv run pytest tests/test_voice_agent.py -v
 ```
 
 ### Manual Testing

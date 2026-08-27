@@ -13,7 +13,7 @@ where = ["server"]
 include = ["agents*"]
 
 [tool.pytest.ini_options]
-testpaths = ["server/tests"]
+testpaths = ["tests"]
 pythonpath = [".", "server"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

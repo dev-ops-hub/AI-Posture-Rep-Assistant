@@ -33,7 +33,7 @@ The voice agent includes 19 comprehensive tests covering:
 
 ```bash
 # Run voice agent tests only
-uv run pytest server/tests/test_voice_agent.py -v
+uv run pytest tests/test_voice_agent.py -v
 
 # Test voice functionality
 uv run python server/verify_setup.py
