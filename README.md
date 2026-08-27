@@ -9,6 +9,7 @@ Python multi-agent workout tracker for squat rep counting, posture fault detecti
 uv venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
+uv pip install -e .              # makes `agents` (in server/agents) importable everywhere
 
 # 2. Configure environment variables
 cp .env.example .env
@@ -84,16 +85,20 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 
 ```text
 .
-├── main.py
+├── main.py                 # Desktop OpenCV entry point (stays in repo root)
 ├── requirements.txt
-├── agents/
-│   ├── __init__.py
-│   ├── models.py
-│   ├── vision_agent.py
-│   ├── audit_agent.py
-│   ├── coach_agent.py
-│   └── voice_agent.py
-├── webapp/
+├── pyproject.toml           # Packaging + pytest config (makes `agents` importable everywhere)
+├── server/                  # All backend Python code (agents, tests, verification script)
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── vision_agent.py
+│   │   ├── audit_agent.py
+│   │   ├── coach_agent.py
+│   │   └── voice_agent.py
+│   ├── tests/
+│   └── verify_setup.py
+├── webapp/                  # Browser control panel (unchanged location)
 │   ├── app.py               # Flask server & REST API
 │   ├── session_manager.py   # Start/pause/resume/stop/quit state machine
 │   ├── templates/index.html
@@ -103,12 +108,20 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 └── README.md
 ```
 
+> **Note:** `server/agents` is installed in editable mode (`uv pip install -e .`) so that
+> `from agents import ...` continues to work unchanged from `main.py`, `webapp/`, and the test
+> suite — regardless of where the `agents` package physically lives.
+
 ## Setup
 
 ```bash
 uv venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
+
+# Editable install so `agents` (under server/agents) is importable from
+# main.py, webapp/, and the test suite without any path juggling
+uv pip install -e .
 ```
 
 Create a local `.env` file in the project root:
@@ -227,35 +240,35 @@ This project includes comprehensive unit tests with **80 passing tests** and **7
 
 | Module | Coverage | Tests |
 |--------|----------|-------|
-| `agents/models.py` | 100% | 6 |
-| `agents/audit_agent.py` | 100% | 9 |
-| `agents/coach_agent.py` | 100% | 12 |
-| `agents/voice_agent.py` | 79% | 23 |
-| `agents/vision_agent.py` | 81% | 19 |
+| `server/agents/models.py` | 100% | 6 |
+| `server/agents/audit_agent.py` | 100% | 9 |
+| `server/agents/coach_agent.py` | 100% | 12 |
+| `server/agents/voice_agent.py` | 79% | 23 |
+| `server/agents/vision_agent.py` | 81% | 19 |
 | `main.py` | 28% | 5 |
 | `webapp/session_manager.py` | — | 6 |
 
-*Note: `main.py` requires webcam access for full testing coverage. `webapp/session_manager.py` tests mock the camera so they run without hardware.*
+*Note: `main.py` requires webcam access for full testing coverage. `webapp/session_manager.py` tests mock the camera so they run without hardware. Test files live in `server/tests/`; `pyproject.toml` configures pytest's `testpaths` accordingly.*
 
 ### Quick Verification
 
 Verify all components work without requiring a webcam:
 
 ```bash
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 ```
 
 ### Run Tests
 
 ```bash
-# Run all tests
-uv run pytest tests/
+# Run all tests (testpaths is set to server/tests in pyproject.toml)
+uv run pytest
 
 # Run with verbose output
-uv run pytest tests/ -v
+uv run pytest -v
 
 # Run with coverage report
-uv run pytest tests/ --cov=agents --cov=main
+uv run pytest --cov=agents --cov=main
 ```
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
