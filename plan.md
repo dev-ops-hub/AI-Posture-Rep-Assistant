@@ -178,13 +178,36 @@ AI-Posture-Rep-Assistant/
 - [x] Re-verify `uv run pytest`, `uv run main.py`, `uv run python server/verify_setup.py`, and
       `uv run python -m webapp.app` all continue to work.
 
+### Task 11: Rep-Counting Accuracy Improvements (NEW)
+- [x] Diagnosed root causes of inaccurate rep counts: single-frame MediaPipe landmark jitter
+      crossing the 90°/160° thresholds without real movement, left-leg-only tracking being
+      unreliable when that leg is turned away from the camera or briefly occluded, and a pure
+      2D (x, y) angle calculation being sensitive to the user's orientation relative to the
+      camera.
+- [x] Added dual-leg averaging with landmark-visibility gating (`_estimate_knee_angle`,
+      `_leg_knee_angle`): averages both knees when both are reliably visible, falls back to
+      whichever leg is visible otherwise, and holds the last known angle if neither leg meets
+      `min_landmark_visibility` (default `0.5`).
+- [x] Switched `_angle()` to a 3D-capable vector dot-product/arccos formula using MediaPipe's
+      `(x, y, z)` landmark coordinates, reducing sensitivity to camera-facing angle.
+- [x] Added exponential-moving-average smoothing of the knee angle (`_smooth_knee_angle`,
+      `knee_angle_smoothing=0.4` default) before it reaches the rep state machine, filtering
+      per-frame jitter that previously caused spurious `BOTTOM`/`STANDING` transitions.
+- [x] Added a minimum inter-rep cooldown (`min_rep_interval_sec=0.3s` default) inside
+      `_update_rep_state()` as a defense-in-depth guard against double-counting.
+- [x] Made `standing_angle_threshold_deg` (160°) and `bottom_angle_threshold_deg` (90°)
+      configurable constructor parameters instead of hardcoded magic numbers.
+- [x] Added 9 new unit tests (28 total for the Vision Agent, up from 19) covering smoothing,
+      dual-leg fallback, visibility gating, and the rep-interval debounce; all 19 pre-existing
+      tests continue to pass unchanged.
+
 ---
 
 ## 5. Testing Infrastructure
 
 ### Test Coverage Summary
-- **Total Tests:** 80 passing
-- **Overall Coverage:** 74% (`agents/` package, physically located at `server/agents/`, + `main.py`; `webapp/` has its own dedicated test file)
+- **Total Tests:** 89 passing
+- **Overall Coverage:** 77% (`agents/` package, physically located at `server/agents/`, + `main.py`; `webapp/` has its own dedicated test file)
 - **Test Files:** 7, located in `tests/` at the repo root (models, vision, audit, coach, voice, main, webapp session manager)
 
 ### Module Coverage Breakdown
@@ -195,7 +218,7 @@ AI-Posture-Rep-Assistant/
 | server/agents/coach_agent.py | 100% | 12 | ✅ Complete |
 | server/agents/__init__.py | 100% | - | ✅ Complete |
 | server/agents/voice_agent.py | 79% | 23 | ✅ Complete |
-| server/agents/vision_agent.py | 81% | 19 | ✅ Complete |
+| server/agents/vision_agent.py | 87% | 28 | ✅ Complete |
 | main.py | 28% | 5 | ⚠️ Partial (webcam required) |
 | webapp/session_manager.py | — | 6 | ✅ Complete (mocked camera) |
 
