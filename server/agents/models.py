@@ -1,3 +1,18 @@
+"""Shared data models (dataclasses) used to pass structured payloads between agents.
+
+These classes define the "wire schema" for the multi-agent pipeline:
+
+- ``PostureViolationEvent`` / ``PostureViolationMetrics``: sent from the Vision Agent
+  to the Form Audit Agent when a sustained posture fault is detected.
+- ``UserProfile`` / ``SessionSummary`` / ``SessionSummaryPayload``: sent from the
+  orchestrator (``main.py`` or ``webapp/session_manager.py``) to the Fitness Coach
+  Agent at the end of a workout session.
+
+Each payload dataclass exposes a ``to_dict()`` method that produces a JSON-serializable
+representation (with floats rounded for readability) suitable for logging or for
+inclusion in an OpenAI API request body.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -6,6 +21,16 @@ from typing import Any
 
 @dataclass(slots=True)
 class PostureViolationMetrics:
+    """Numeric snapshot of a single posture-violation event.
+
+    Attributes:
+        spine_angle_deg: Torso lean angle (degrees) away from vertical at the
+            moment the violation was flagged.
+        knee_angle_deg: Knee angle (degrees) at the same moment, for context.
+        violation_duration_sec: How long the spine angle had continuously
+            exceeded the posture threshold before this event was raised.
+    """
+
     spine_angle_deg: float
     knee_angle_deg: float
     violation_duration_sec: float
@@ -13,6 +38,13 @@ class PostureViolationMetrics:
 
 @dataclass(slots=True)
 class PostureViolationEvent:
+    """Message sent from the Vision Agent to the Form Audit Agent.
+
+    Carries the metrics captured at the moment of a sustained posture fault
+    plus a base64-encoded JPEG snapshot of the frame, so the Form Audit Agent
+    can request a biomechanical diagnosis from the vision-capable LLM.
+    """
+
     sender: str
     recipient: str
     event_type: str
@@ -21,6 +53,7 @@ class PostureViolationEvent:
     image_base64: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Returns a JSON-serializable dict representation of this event."""
         return {
             "sender": self.sender,
             "recipient": self.recipient,
@@ -37,12 +70,16 @@ class PostureViolationEvent:
 
 @dataclass(slots=True)
 class UserProfile:
+    """Basic user context used to personalize calorie math and coaching copy."""
+
     weight_kg: float
     goal: str
 
 
 @dataclass(slots=True)
 class SessionSummary:
+    """Aggregated statistics for one completed workout session."""
+
     exercise: str
     total_reps: int
     duration_seconds: float
@@ -53,6 +90,13 @@ class SessionSummary:
 
 @dataclass(slots=True)
 class SessionSummaryPayload:
+    """Message sent to the Fitness Coach Agent at the end of a session.
+
+    Combines the user's profile, the session's aggregated stats, and the list
+    of form-audit diagnostic notes collected during the workout so the coach
+    agent can generate (or fall back to a templated) closing summary.
+    """
+
     sender: str
     recipient: str
     user_profile: UserProfile
@@ -60,6 +104,7 @@ class SessionSummaryPayload:
     form_audit_diagnostics: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Returns a JSON-serializable dict representation of this payload."""
         return {
             "sender": self.sender,
             "recipient": self.recipient,

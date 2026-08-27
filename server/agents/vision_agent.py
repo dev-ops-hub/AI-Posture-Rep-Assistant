@@ -1,3 +1,19 @@
+"""Agent 1: Vision & Tracking Agent.
+
+Runs entirely locally (no network calls) using MediaPipe Pose, OpenCV, and
+NumPy to turn raw webcam frames into:
+
+- A squat rep count, driven by a finite state machine over the knee angle.
+- Sustained forward-lean posture-fault detection, driven by the spine angle.
+- An annotated frame (pose skeleton overlay) for display.
+- ``PostureViolationEvent`` payloads for the Form Audit Agent when a fault
+  has been sustained long enough to warrant an AI form check.
+
+See the module-level ``VisionAgent`` docstring for details on the
+rep-counting robustness measures (dual-leg averaging, visibility gating,
+smoothing, and the minimum inter-rep cooldown).
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,6 +34,13 @@ from .models import PostureViolationEvent, PostureViolationMetrics
 
 
 class SquatState(str, Enum):
+    """Finite states of the squat rep-counting state machine.
+
+    A rep is counted on the transition from ``ASCENDING`` (or, for fast reps
+    sampled at a low frame rate, directly from ``BOTTOM``) back to
+    ``STANDING``: ``STANDING -> DESCENDING -> BOTTOM -> ASCENDING -> STANDING``.
+    """
+
     STANDING = "standing"
     DESCENDING = "descending"
     BOTTOM = "bottom"
@@ -26,6 +49,20 @@ class SquatState(str, Enum):
 
 @dataclass(slots=True)
 class PoseFrameMetrics:
+    """Per-frame output of :meth:`VisionAgent.process_frame`.
+
+    Attributes:
+        reps: Total reps counted so far this session.
+        knee_angle_deg: Smoothed knee angle for this frame (degrees).
+        spine_angle_deg: Spine lean angle for this frame (degrees from vertical).
+        posture_fault_count: Total sustained posture faults detected so far.
+        posture_violation_active: Whether a posture violation is currently in progress.
+        posture_violation_duration: How long (seconds) the current violation has lasted.
+        audit_ready: Whether this frame triggered a new ``PostureViolationEvent``.
+        state: Current :class:`SquatState` value, as a string.
+        landmarks_detected: Whether MediaPipe found a pose in this frame.
+    """
+
     reps: int = 0
     knee_angle_deg: float = 180.0
     spine_angle_deg: float = 0.0
@@ -38,6 +75,28 @@ class PoseFrameMetrics:
 
 
 class VisionAgent:
+    """Local pose-tracking agent: rep counting + posture-fault detection.
+
+    Rep-counting robustness: the raw per-frame knee angle is never fed
+    directly into the state machine. Instead, each frame:
+
+    1. Both legs' knee angles are computed (from 3D landmark coordinates)
+       and averaged when both are reliably visible, falling back to
+       whichever single leg is visible, or holding the previous smoothed
+       value if neither leg meets ``min_landmark_visibility``
+       (:meth:`_estimate_knee_angle`).
+    2. The combined reading is passed through an exponential moving average
+       (:meth:`_smooth_knee_angle`, weight ``knee_angle_smoothing``) to filter
+       out per-frame MediaPipe landmark jitter.
+    3. Only the smoothed angle drives :meth:`_update_rep_state`, which also
+       enforces a minimum cooldown (``min_rep_interval_sec``) between two
+       counted reps as a defense-in-depth guard against double-counting.
+
+    These measures address a class of accuracy issues where a single noisy
+    frame (or a briefly occluded leg) could otherwise flip the rep state
+    machine without any real movement having occurred.
+    """
+
     def __init__(
         self,
         min_detection_confidence: float = 0.5,
@@ -51,6 +110,29 @@ class VisionAgent:
         min_rep_interval_sec: float = 0.3,
         min_landmark_visibility: float = 0.5,
     ) -> None:
+        """Initializes the agent and (if MediaPipe is available) the pose model.
+
+        Args:
+            min_detection_confidence: MediaPipe Pose detection confidence threshold.
+            min_tracking_confidence: MediaPipe Pose tracking confidence threshold.
+            posture_threshold_deg: Spine angle (degrees) above which a forward-lean
+                posture fault begins accumulating.
+            violation_hold_seconds: How long a posture fault must persist before
+                a ``PostureViolationEvent`` is emitted.
+            max_audits_per_session: Maximum number of Form Audit events emitted
+                per session (keeps OpenAI API usage bounded).
+            standing_angle_threshold_deg: Knee angle (degrees) at/above which the
+                user is considered fully standing.
+            bottom_angle_threshold_deg: Knee angle (degrees) at/below which the
+                user is considered at the bottom of the squat.
+            knee_angle_smoothing: Exponential-moving-average weight (0-1) applied
+                to each new raw knee-angle reading; lower values smooth out more
+                jitter at the cost of a small amount of lag.
+            min_rep_interval_sec: Minimum time that must elapse between two
+                counted reps.
+            min_landmark_visibility: Minimum MediaPipe landmark visibility score
+                required before a leg's knee angle is trusted for a given frame.
+        """
         self.posture_threshold_deg = posture_threshold_deg
         self.violation_hold_seconds = violation_hold_seconds
         self.max_audits_per_session = max_audits_per_session
@@ -90,10 +172,27 @@ class VisionAgent:
         )
 
     def close(self) -> None:
+        """Releases the underlying MediaPipe Pose model, if one was created."""
         if self.pose is not None:
             self.pose.close()
 
     def process_frame(self, frame: np.ndarray) -> tuple[np.ndarray, PoseFrameMetrics, PostureViolationEvent | None]:
+        """Processes a single BGR video frame.
+
+        Runs MediaPipe Pose on the frame, updates the rep-counting and
+        posture-fault state machines, and draws the pose skeleton overlay
+        onto a copy of the frame.
+
+        Args:
+            frame: A single BGR frame as a NumPy array (e.g. from ``cv2.VideoCapture``).
+
+        Returns:
+            A 3-tuple of:
+                - the annotated frame (pose skeleton drawn on a copy of ``frame``),
+                - a :class:`PoseFrameMetrics` snapshot for this frame, and
+                - a :class:`PostureViolationEvent` if this frame triggered a new
+                  Form Audit request, otherwise ``None``.
+        """
         metrics = PoseFrameMetrics(reps=self.reps, posture_fault_count=self.posture_fault_count, state=self.state.value)
         violation_event = None
 
