@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1280px;height:720px;background:#1A1A2E;font-family:'Segoe UI',Arial,sans-serif;overflow:hidden;position:relative}
+  .top-bar{position:absolute;top:0;left:0;right:0;height:8px;background:#00D4FF}
+  h2{position:absolute;left:48px;top:16px;font-size:34px;font-weight:700;color:#fff}
+  .col{position:absolute;top:75px;width:560px;height:610px;border-radius:6px;padding:24px}
+  .left{left:24px;background:#0D1B4A}
+  .right{right:24px;background:#002850}
+  .col-title{font-size:20px;font-weight:700;margin-bottom:14px}
+  .left .col-title{color:#FF7A00}
+  .right .col-title{color:#00C85A}
+  .col ul{list-style:none;color:#ccc;font-size:15px}
+  .col ul li{margin-bottom:10px;padding-left:18px;position:relative;line-height:1.4}
+  .col ul li::before{content:"•";position:absolute;left:0;color:inherit}
+  .arrow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:44px;color:#00D4FF;font-weight:700}
+</style></head><body>
+<div class="top-bar"></div>
+<h2>Problem &amp; Solution</h2>
+<div class="col left">
+  <div class="col-title">❌ The Problem</div>
+  <ul>
+    <li>Solo gym-goers have no coach to count reps accurately</li>
+    <li>Poor squat form leads to serious knee &amp; back injuries</li>
+    <li>Personal trainers are expensive and not always available</li>
+    <li>Existing apps give generic, delayed, non-contextual feedback</li>
+    <li>No affordable real-time AI coaching solution existed</li>
+  </ul>
+</div>
+<div class="arrow">→</div>
+<div class="col right">
+  <div class="col-title">✅ Our Solution</div>
+  <ul>
+    <li>Automated rep counting via MediaPipe pose landmark tracking</li>
+    <li>Biomechanical spine-angle fault detection (&gt;15° sustained for 2 s)</li>
+    <li>Posture snapshots sent to GPT-4o for visual biomechanical diagnosis</li>
+    <li>GPT-4o-mini generates personalised post-workout coaching summaries</li>
+    <li>Local pyttsx3 voice coaching — zero API cost, works offline</li>
+    <li>Flask browser panel: ▶ Start / ⏸ Pause / ⏹ Stop / ⏻ Quit</li>
+  </ul>
+</div>
+</body></html>

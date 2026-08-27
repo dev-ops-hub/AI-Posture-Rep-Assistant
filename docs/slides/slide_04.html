@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1280px;height:720px;background:#1A1A2E;font-family:'Segoe UI',Arial,sans-serif;overflow:hidden;position:relative}
+  .top-bar{position:absolute;top:0;left:0;right:0;height:8px;background:#FF7A00}
+  h2{position:absolute;left:48px;top:14px;font-size:34px;font-weight:700;color:#fff}
+  .steps{position:absolute;top:68px;left:12px;right:12px;display:flex;gap:6px;align-items:flex-start}
+  .step{flex:1;border-radius:6px;padding:16px 14px;min-height:430px;position:relative}
+  .s1{background:#0F3C96}.s2{background:#5A009B}.s3{background:#00705A}.s4{background:#B54500}.s5{background:#7A005A}
+  .step-num{font-size:36px;font-weight:800;color:#00D4FF;text-align:center;margin-bottom:6px}
+  .step-title{font-size:16px;font-weight:700;color:#fff;text-align:center;margin-bottom:12px}
+  .step-desc{font-size:12.5px;color:#ccc;line-height:1.6}
+  .step-code{margin-top:8px;background:rgba(0,0,0,0.3);border-radius:3px;padding:5px 8px;font-family:monospace;font-size:11px;color:#00D4FF}
+  .arrow{font-size:22px;color:#00D4FF;align-self:center;flex-shrink:0}
+  .voice-note{position:absolute;bottom:14px;left:16px;right:16px;background:#002820;border-radius:4px;padding:9px 16px;color:#00C85A;font-size:13px;font-style:italic;text-align:center}
+</style></head><body>
+<div class="top-bar"></div>
+<h2>How the App Works — User Flow</h2>
+<div class="steps">
+  <div class="step s1">
+    <div class="step-num">1</div>
+    <div class="step-title">⚙️ Configure</div>
+    <div class="step-desc">
+      Copy <em>.env.example → .env</em><br><br>
+      Set environment variables:<br>
+      · CAMERA_INDEX (webcam)<br>
+      · USER_WEIGHT_KG<br>
+      · FITNESS_GOAL<br>
+      · WORKOUT_MET<br><br>
+      Optional:<br>
+      · OPENAI_API_KEY<br>
+      · VOICE_ENABLED<br>
+      · VOICE_RATE / VOLUME
+    </div>
+  </div>
+  <div class="arrow">▶</div>
+  <div class="step s2">
+    <div class="step-num">2</div>
+    <div class="step-title">🚀 Launch</div>
+    <div class="step-desc">
+      <strong>Web mode (recommended):</strong>
+      <div class="step-code">uv run python -m webapp.app</div>
+      Open <em>http://localhost:5000</em><br><br>
+      <strong>Desktop mode:</strong>
+      <div class="step-code">uv run main.py</div>
+      Opens OpenCV window<br>
+      Press <kbd>q</kbd> to quit
+    </div>
+  </div>
+  <div class="arrow">▶</div>
+  <div class="step s3">
+    <div class="step-num">3</div>
+    <div class="step-title">🏋️ Track</div>
+    <div class="step-desc">
+      Press <strong>▶ Start</strong><br><br>
+      MediaPipe detects 33 3D body keypoints at 30 FPS<br><br>
+      Rep FSM tracks:<br>
+      STANDING → DESCENDING<br>
+      → BOTTOM → ASCENDING<br>
+      → rep counted<br><br>
+      Spine angle monitored continuously
+    </div>
+  </div>
+  <div class="arrow">▶</div>
+  <div class="step s4">
+    <div class="step-num">4</div>
+    <div class="step-title">🔍 Audit</div>
+    <div class="step-desc">
+      Spine angle &gt; 15° for &gt; 2 s triggers snapshot<br><br>
+      Frame → JPEG → Base64 → GPT-4o<br><br>
+      Visual biomechanical diagnosis returned (1–2 sentences)<br><br>
+      Voice agent speaks the correction tip<br><br>
+      Max 2 API calls per session
+    </div>
+  </div>
+  <div class="arrow">▶</div>
+  <div class="step s5">
+    <div class="step-num">5</div>
+    <div class="step-title">📊 Report</div>
+    <div class="step-desc">
+      Press <strong>⏹ Stop</strong><br><br>
+      GPT-4o-mini synthesises:<br>
+      · Total reps &amp; duration<br>
+      · Calories (MET formula)<br>
+      · Posture fault count<br>
+      · Audit diagnostic notes<br><br>
+      Report shown in browser with "Things to Improve" tips
+    </div>
+  </div>
+</div>
+<div class="voice-note">🔊 Voice feedback runs throughout — rep milestones, posture alerts, form corrections, and session summary (all offline via pyttsx3)</div>
+</body></html>
