@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Posture Rep Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <header class="topbar">
+        <h1>🏋️ AI Posture Rep Assistant</h1>
+        <span id="session-badge" class="badge idle">Idle</span>
+    </header>
+
+    <main class="layout">
+        <section class="video-panel">
+            <div class="video-wrapper">
+                <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Live workout feed" />
+            </div>
+
+            <div class="controls">
+                <button id="btn-start" class="btn btn-start">▶ Start</button>
+                <button id="btn-pause" class="btn btn-pause" disabled>⏸ Pause</button>
+                <button id="btn-stop" class="btn btn-stop" disabled>⏹ Stop</button>
+                <button id="btn-quit" class="btn btn-quit" disabled>⏻ Quit</button>
+            </div>
+
+            <details class="settings">
+                <summary>Session settings</summary>
+                <div class="settings-grid">
+                    <label>Camera index
+                        <input type="number" id="cfg-camera" value="{{ defaults.camera_index }}" min="0" />
+                    </label>
+                    <label>Body weight (kg)
+                        <input type="number" id="cfg-weight" value="{{ defaults.weight_kg }}" min="1" step="0.5" />
+                    </label>
+                    <label>Fitness goal
+                        <input type="text" id="cfg-goal" value="{{ defaults.goal }}" />
+                    </label>
+                    <label>MET value
+                        <input type="number" id="cfg-met" value="{{ defaults.met_value }}" min="1" step="0.1" />
+                    </label>
+                </div>
+            </details>
+            <p id="error-banner" class="error-banner hidden"></p>
+        </section>
+
+        <aside class="stats-panel">
+            <h2>Live Stats</h2>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Reps</span>
+                    <span id="stat-reps" class="stat-value">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Elapsed</span>
+                    <span id="stat-elapsed" class="stat-value">0s</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Posture Faults</span>
+                    <span id="stat-faults" class="stat-value">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Rep State</span>
+                    <span id="stat-state" class="stat-value">standing</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Knee Angle</span>
+                    <span id="stat-knee" class="stat-value">180°</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Spine Angle</span>
+                    <span id="stat-spine" class="stat-value">0°</span>
+                </div>
+            </div>
+
+            <div id="latest-note" class="latest-note hidden">
+                <h3>Latest form note</h3>
+                <p id="latest-note-text"></p>
+            </div>
+        </aside>
+    </main>
+
+    <div id="report-overlay" class="overlay hidden">
+        <div class="report-card">
+            <h2>Workout Report</h2>
+            <div id="report-summary" class="report-summary"></div>
+
+            <h3>Things to Improve</h3>
+            <ul id="report-tips" class="report-tips"></ul>
+
+            <h3>AI Coach Summary</h3>
+            <p id="report-coach" class="report-coach"></p>
+
+            <div class="report-actions">
+                <button id="btn-report-close" class="btn btn-start">New Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

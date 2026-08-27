@@ -1,127 +1,72 @@
-# Test Summary
+# Voice Feedback Testing
 
-## Overview
+## Voice Agent Tests
 
-Comprehensive unit tests have been added for all code modules with **76% overall code coverage** and **51 passing tests**.
+The voice agent includes 19 comprehensive tests covering:
 
-## Running Tests
+### Initialization
+- ✓ Enabled/disabled states
+- ✓ Environment variable control (`VOICE_ENABLED`)
+- ✓ Custom speech rate and volume
+- ✓ Voice selection (prefers English voices)
+- ✓ Graceful fallback when pyttsx3 is unavailable
 
-### Run all tests:
-```bash
-uv run pytest tests/
-```
+### Speech Queue Management
+- ✓ Normal speech queuing
+- ✓ Priority speech (clears queue)
+- ✓ Empty text handling
 
-### Run tests with verbose output:
-```bash
-uv run pytest tests/ -v
-```
+### Announcements
+- ✓ Rep milestones (every 5 reps)
+- ✓ Posture alerts
+- ✓ Form correction notes
+- ✓ Long note truncation
+- ✓ Session completion announcements
+  - With minutes
+  - With seconds only
 
-### Run tests with coverage report:
-```bash
-uv run pytest tests/ --cov=agents --cov=main --cov-report=term-missing
-```
+### Resource Management
+- ✓ Proper cleanup on close()
+- ✓ Background worker thread
 
-### Run specific test file:
-```bash
-uv run pytest tests/test_vision_agent.py -v
-```
-
-### Run specific test:
-```bash
-uv run pytest tests/test_coach_agent.py::test_fitness_coach_agent_calculate_calories -v
-```
-
-## Test Coverage
-
-| Module | Coverage | Notes |
-|--------|----------|-------|
-| agents/__init__.py | 100% | All exports verified |
-| agents/audit_agent.py | 100% | Full coverage with mocked OpenAI |
-| agents/coach_agent.py | 100% | Full coverage with mocked OpenAI |
-| agents/models.py | 100% | All dataclasses and methods tested |
-| agents/vision_agent.py | 81% | Core logic tested, MediaPipe interactions partially covered |
-| main.py | 33% | HUD rendering tested, main loop requires webcam |
-
-## Test Structure
-
-```
-tests/
-├── __init__.py
-├── test_models.py           # Data models and serialization
-├── test_vision_agent.py     # Computer vision and pose detection
-├── test_audit_agent.py      # Posture audit feedback
-├── test_coach_agent.py      # Fitness coaching summaries
-└── test_main.py             # HUD rendering functions
-```
-
-## Verification Script
-
-Run the verification script to test all components without requiring a webcam:
+## Running Voice Tests
 
 ```bash
+# Run voice agent tests only
+uv run pytest tests/test_voice_agent.py -v
+
+# Test voice functionality
 uv run python verify_setup.py
 ```
 
-This checks:
-- ✓ All imports work
-- ✓ VisionAgent initialization and cleanup
-- ✓ FormAuditAgent initialization
-- ✓ FitnessCoachAgent calorie calculations
-- ✓ Summary generation
-- ✓ Angle calculations (knee and spine)
+## Voice Features in Action
 
-## Key Test Features
+During a workout session, the voice agent provides:
 
-### Mocked Dependencies
-- **OpenAI API**: Tests work without API key, verify both API and fallback modes
-- **MediaPipe**: Tests work with and without MediaPipe installed
-- **Webcam**: Vision tests use synthetic data instead of camera
+1. **Rep Counting**: Every 5 reps → "5 reps", "10 reps", etc.
+2. **Posture Alerts**: Immediate warning → "Chest up, brace harder"
+3. **Form Corrections**: Announces audit feedback from the AI
+4. **Session Complete**: Final summary with rep count and duration
 
-### Tested Scenarios
+## Disabling Voice for Tests
 
-#### VisionAgent
-- ✓ Angle calculations (knee, spine)
-- ✓ Rep counting state machine (standing → descending → bottom → ascending)
-- ✓ Posture violation detection
-- ✓ Violation hold duration tracking
-- ✓ Max audits per session limit
+Set environment variable in test fixtures:
 
-#### FormAuditAgent
-- ✓ Initialization with/without API key
-- ✓ Fallback feedback generation
-- ✓ OpenAI API integration (mocked)
-- ✓ Different posture fault types
+```python
+monkeypatch.setenv("VOICE_ENABLED", "false")
+```
 
-#### FitnessCoachAgent
-- ✓ Calorie calculations
-- ✓ Session summary generation
-- ✓ Fallback mode
-- ✓ OpenAI API integration (mocked)
+Or disable in your `.env` file:
 
-#### Models
-- ✓ Dataclass initialization
-- ✓ Rounding in serialization
-- ✓ Default values
-- ✓ to_dict() methods
+```bash
+VOICE_ENABLED=false
+```
 
-## Continuous Integration Ready
+## Platform Support
 
-Tests are configured for CI/CD with:
-- `pyproject.toml` for pytest configuration
-- Coverage reporting (HTML and terminal)
-- No external dependencies required (camera, API keys)
-- Fast execution (~2.5 seconds)
+The voice agent uses `pyttsx3` which provides cross-platform TTS:
+- **macOS**: Uses NSSpeechSynthesizer
+- **Linux**: Uses espeak or festival
+- **Windows**: Uses SAPI5
 
-## Requirements
-
-Test dependencies (already in requirements.txt):
-- pytest>=8.0
-- pytest-cov>=4.1
-- pytest-mock>=3.12
-
-## Notes
-
-- Tests use mocking for external dependencies (OpenAI, webcam)
-- MediaPipe version pinned to 0.10.9 for compatibility with solutions API
-- All tests pass on macOS with Apple Silicon
-- Coverage HTML report available in `htmlcov/index.html`
+All tests mock the TTS engine, so they run on any platform without audio hardware.
