@@ -7,7 +7,7 @@ import time
 import cv2
 from dotenv import load_dotenv
 
-from agents import FitnessCoachAgent, FormAuditAgent, SessionSummaryPayload, VisionAgent
+from agents import FitnessCoachAgent, FormAuditAgent, SessionSummaryPayload, VisionAgent, VoiceAgent
 from agents.models import SessionSummary, UserProfile
 
 
@@ -39,10 +39,13 @@ def main() -> None:
     vision_agent = VisionAgent()
     audit_agent = FormAuditAgent()
     coach_agent = FitnessCoachAgent()
+    voice_agent = VoiceAgent()
     executor = ThreadPoolExecutor(max_workers=1)
     audit_future: Future[str] | None = None
     audit_notes: list[str] = []
     latest_note = ""
+    last_rep_count = 0
+    posture_alert_count = 0
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
@@ -52,6 +55,7 @@ def main() -> None:
 
     started_at = time.monotonic()
     last_frame_at = started_at
+    voice_agent.announce_workout_start()
 
     try:
         while cap.isOpened():
@@ -65,13 +69,21 @@ def main() -> None:
 
             annotated, metrics, violation_event = vision_agent.process_frame(frame)
 
+            if metrics.reps > last_rep_count:
+                last_rep_count = metrics.reps
+                voice_agent.announce_rep(metrics.reps)
+
             if violation_event and audit_future is None:
+                voice_agent.announce_posture_alert(posture_alert_count)
+                posture_alert_count += 1
                 audit_future = executor.submit(audit_agent.audit_posture, violation_event)
 
             if audit_future is not None and audit_future.done():
                 latest_note = audit_future.result().strip()
                 if latest_note:
                     audit_notes.append(latest_note)
+                    is_first_note = len(audit_notes) == 1
+                    voice_agent.announce_form_note(latest_note, is_first_note)
                 audit_future = None
 
             draw_hud(annotated, fps, metrics, latest_note)
@@ -85,6 +97,7 @@ def main() -> None:
         cap.release()
         cv2.destroyAllWindows()
         vision_agent.close()
+        voice_agent.close()
         executor.shutdown(wait=False, cancel_futures=True)
 
     calories = coach_agent.calculate_calories(met_value, weight_kg, duration_seconds)
@@ -101,6 +114,9 @@ def main() -> None:
             total_posture_faults=vision_agent.posture_fault_count,
         ),
         form_audit_diagnostics=audit_notes,
+    )
+    voice_agent.announce_session_complete(
+        vision_agent.reps, duration_seconds, vision_agent.posture_fault_count
     )
     print(coach_agent.build_summary(payload))
 

@@ -17,6 +17,7 @@ try:
         FormAuditAgent,
         VisionAgent,
         SessionSummaryPayload,
+        VoiceAgent,
     )
     from agents.models import UserProfile, SessionSummary
     print("  ✓ All imports successful\n")
@@ -103,6 +104,16 @@ except Exception as e:
 # Close vision agent
 vision_agent.close()
 
+# Test VoiceAgent initialization
+print("✓ Testing VoiceAgent initialization...")
+try:
+    voice_agent = VoiceAgent()
+    print(f"  ✓ VoiceAgent created (enabled={voice_agent.enabled})\n")
+    voice_agent.close()
+except Exception as e:
+    print(f"  ✗ VoiceAgent failed: {e}")
+    sys.exit(1)
+
 print("=" * 60)
 print("✅ All components verified successfully!")
 print("=" * 60)
@@ -111,6 +122,7 @@ print("  • All modules can be imported")
 print("  • VisionAgent can be initialized and closed")
 print("  • FormAuditAgent can be initialized")
 print("  • FitnessCoachAgent can calculate calories and generate summaries")
+print("  • VoiceAgent can be initialized and closed")
 print("  • Angle calculations work correctly")
 print("\n🚀 Your code is ready to use!")
 print("\nTo run the full application with webcam:")
