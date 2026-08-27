@@ -1,3 +1,12 @@
+"""Agent 2: Form Audit Agent.
+
+Consults an OpenAI vision-capable model (default: ``gpt-4o``) to produce a
+concise biomechanical correction whenever the Vision Agent reports a
+sustained posture fault. Falls back to a deterministic, rule-based message
+if no API key is configured, the ``openai`` package isn't installed, or the
+API call fails/returns no image.
+"""
+
 from __future__ import annotations
 
 import os
@@ -11,13 +20,35 @@ except ImportError:  # pragma: no cover - depends on local environment
 
 
 class FormAuditAgent:
+    """Requests (or synthesizes) a one-to-two-sentence squat form correction."""
+
     def __init__(self, model: str = "gpt-4o", enabled: bool = True) -> None:
+        """Initializes the agent.
+
+        Args:
+            model: OpenAI vision model to call for form audits.
+            enabled: Master switch; automatically disabled if ``OPENAI_API_KEY``
+                is not set or the ``openai`` package could not be imported.
+        """
         api_key = os.getenv("OPENAI_API_KEY")
         self.enabled = enabled and bool(api_key) and OpenAI is not None
         self.model = model
         self.client = OpenAI(api_key=api_key) if self.enabled and OpenAI else None
 
     def audit_posture(self, event: PostureViolationEvent) -> str:
+        """Returns a short corrective note for the given posture-violation event.
+
+        Sends the event's JPEG snapshot and knee/spine angles to the OpenAI
+        vision model with a biomechanics-coach prompt. Falls back to
+        ``_fallback_feedback`` if the agent is disabled, has no client, or the
+        event carries no image, or if the model returns an empty response.
+
+        Args:
+            event: The posture-violation payload emitted by the Vision Agent.
+
+        Returns:
+            A one-to-two-sentence corrective note.
+        """
         if not self.enabled or self.client is None or not event.image_base64:
             return self._fallback_feedback(event)
 
@@ -56,6 +87,10 @@ class FormAuditAgent:
 
     @staticmethod
     def _fallback_feedback(event: PostureViolationEvent) -> str:
+        """Deterministic corrective message used when the OpenAI call is unavailable.
+
+        Chooses between two canned cues based on how severe the spine lean was.
+        """
         if event.metrics.spine_angle_deg > 20:
             return "Your torso is folding forward. Brace your core and keep your chest stacked over your hips on the descent."
         return "Your squat is drifting out of position. Slow the rep slightly and keep your spine neutral as you stand up."
