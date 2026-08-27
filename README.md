@@ -343,20 +343,19 @@ See [TESTING.md](TESTING.md) for detailed testing documentation.
 
 ### Rep-Counting Accuracy Tuning
 
-Rep counting uses both legs (averaged when both are visible), 3D landmark coordinates, and
-exponential smoothing to filter out MediaPipe tracking jitter. If reps are still under/over
-counted for your setup, these `VisionAgent` constructor parameters can be tuned:
+Rep counting tracks the left knee angle (hip-knee-ankle) and left spine lean (shoulder-hip)
+each frame; it doesn't average both legs or smooth readings across frames. If reps are still
+under/over counted for your setup, these `VisionAgent` constructor parameters can be tuned:
 
 | Parameter | Default | Effect |
 | :--- | :--- | :--- |
-| `standing_angle_threshold_deg` | 160.0 | Knee angle considered "fully standing" |
+| `standing_angle_threshold_deg` | 160.0 | Knee angle considered "fully standing" (completes a rep) |
 | `bottom_angle_threshold_deg` | 90.0 | Knee angle considered "at the bottom" (lower = deeper squat required) |
-| `knee_angle_smoothing` | 0.4 | EMA weight for new readings (lower = smoother but slower to react) |
-| `min_rep_interval_sec` | 0.3 | Minimum time between two counted reps |
-| `min_landmark_visibility` | 0.5 | Minimum MediaPipe visibility score before a leg's angle is trusted |
+| `min_detection_confidence` | 0.5 | MediaPipe's minimum confidence to detect a person in a frame |
+| `min_tracking_confidence` | 0.5 | MediaPipe's minimum confidence to keep tracking landmarks between frames |
 
 For best results, stand far enough back that your full body (hips to ankles) is visible and
-side-on (or at a slight angle) to the camera.
+side-on (or at a slight angle) to the camera, with your left side facing it.
 
 ### API Cost Estimates
 
