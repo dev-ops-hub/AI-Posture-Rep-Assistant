@@ -234,7 +234,7 @@ Press `q` to end the workout session and print the final coaching summary in the
 
 ## Testing
 
-This project includes comprehensive unit tests with **80 passing tests** and **74% overall code coverage** (agents + main.py; `webapp/` is covered by its own dedicated test file).
+This project includes comprehensive unit tests with **89 passing tests** and **77% overall code coverage** (agents + main.py; `webapp/` is covered by its own dedicated test file).
 
 ### Coverage by Module
 
@@ -244,7 +244,7 @@ This project includes comprehensive unit tests with **80 passing tests** and **7
 | `server/agents/audit_agent.py` | 100% | 9 |
 | `server/agents/coach_agent.py` | 100% | 12 |
 | `server/agents/voice_agent.py` | 79% | 23 |
-| `server/agents/vision_agent.py` | 81% | 19 |
+| `server/agents/vision_agent.py` | 87% | 28 |
 | `main.py` | 28% | 5 |
 | `webapp/session_manager.py` | — | 6 |
 
@@ -280,6 +280,23 @@ See [TESTING.md](TESTING.md) for detailed testing documentation.
 - The webcam flow requires local camera access and the packages in `requirements.txt`.
 - The web frontend (`webapp/app.py`) runs Flask's built-in development server, intended for
   local single-user use only; it is not hardened for production deployment.
+
+### Rep-Counting Accuracy Tuning
+
+Rep counting uses both legs (averaged when both are visible), 3D landmark coordinates, and
+exponential smoothing to filter out MediaPipe tracking jitter. If reps are still under/over
+counted for your setup, these `VisionAgent` constructor parameters can be tuned:
+
+| Parameter | Default | Effect |
+| :--- | :--- | :--- |
+| `standing_angle_threshold_deg` | 160.0 | Knee angle considered "fully standing" |
+| `bottom_angle_threshold_deg` | 90.0 | Knee angle considered "at the bottom" (lower = deeper squat required) |
+| `knee_angle_smoothing` | 0.4 | EMA weight for new readings (lower = smoother but slower to react) |
+| `min_rep_interval_sec` | 0.3 | Minimum time between two counted reps |
+| `min_landmark_visibility` | 0.5 | Minimum MediaPipe visibility score before a leg's angle is trusted |
+
+For best results, stand far enough back that your full body (hips to ankles) is visible and
+side-on (or at a slight angle) to the camera.
 
 ### API Cost Estimates
 
