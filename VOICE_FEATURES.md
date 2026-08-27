@@ -45,7 +45,7 @@ VOICE_ENABLED=false
 
 ### Custom Voice Settings
 
-You can customize the voice agent in `agents/voice_agent.py`:
+You can customize the voice agent in `server/agents/voice_agent.py`:
 
 ```python
 voice_agent = VoiceAgent(
@@ -109,14 +109,14 @@ Posture alerts use priority speech, which:
 19 comprehensive tests cover all voice functionality:
 
 ```bash
-uv run pytest tests/test_voice_agent.py -v
+uv run pytest server/tests/test_voice_agent.py -v
 ```
 
 ### Manual Testing
 
 ```bash
 # Test voice without webcam
-uv run python verify_setup.py
+uv run python server/verify_setup.py
 
 # Test voice during workout
 uv run main.py
@@ -133,7 +133,7 @@ uv run main.py
 
 ### Voice is Too Fast/Slow
 
-Adjust the rate parameter in `agents/voice_agent.py`:
+Adjust the rate parameter in `server/agents/voice_agent.py`:
 
 ```python
 voice_agent = VoiceAgent(rate=150)  # Slower
@@ -151,7 +151,7 @@ voice_agent = VoiceAgent(volume=1.0)  # Maximum
 
 ### Different Voice
 
-To manually select a voice, modify the initialization in `agents/voice_agent.py`:
+To manually select a voice, modify the initialization in `server/agents/voice_agent.py`:
 
 ```python
 voices = self.engine.getProperty("voices")
