@@ -237,8 +237,6 @@ VOICE_VOLUME=1.0
 VOICE_ENABLED=false
 ```
 
-See [VOICE_IMPROVEMENTS.md](VOICE_IMPROVEMENTS.md) for detailed customization options.
-
 ## Run
 
 Make sure you've completed [Setup](#setup) first (dependencies installed and `.env` created).
