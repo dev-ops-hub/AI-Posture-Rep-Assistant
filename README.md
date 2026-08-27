@@ -4,7 +4,7 @@ Python multi-agent workout tracker for squat rep counting, posture fault detecti
 
 ## Requirements
 
-- **Python 3.11 or newer** (see `requires-python` in [pyproject.toml](pyproject.toml)). CPython 3.11.x or 3.12.x is recommended, matching the pinned `mediapipe==0.10.9` dependency.
+- **Python 3.11** (see `requires-python` in [pyproject.toml](pyproject.toml)). CPython 3.11.x is recommended, matching the pinned `mediapipe==0.10.9` dependency.
 - A webcam for live tracking (not required to run the test suite).
 - [`uv`](https://docs.astral.sh/uv/) for dependency management (or substitute `pip`/`venv` commands manually).
 
@@ -150,7 +150,7 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 
 ## Setup
 
-Requires Python 3.11+ — see [Requirements](#requirements).
+Requires Python 3.11 — see [Requirements](#requirements).
 
 **macOS / Linux:**
 ```bash
