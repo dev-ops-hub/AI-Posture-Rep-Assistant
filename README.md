@@ -2,7 +2,16 @@
 
 Python multi-agent workout tracker for squat rep counting, posture fault detection, and AI-generated coaching.
 
+## Requirements
+
+- **Python 3.11 or newer** (see `requires-python` in [pyproject.toml](pyproject.toml)). CPython 3.11.x or 3.12.x is recommended, matching the pinned `mediapipe==0.10.9` dependency.
+- A webcam for live tracking (not required to run the test suite).
+- [`uv`](https://docs.astral.sh/uv/) for dependency management (or substitute `pip`/`venv` commands manually).
+
 ## Quick Start
+
+<details open>
+<summary><strong>macOS / Linux</strong></summary>
 
 ```bash
 # 1. Install dependencies
@@ -18,6 +27,33 @@ cp .env.example .env
 # 3. Launch the web app
 uv run python -m webapp.app
 ```
+
+</details>
+
+<details>
+<summary><strong>Windows (PowerShell)</strong></summary>
+
+```powershell
+# 1. Install dependencies
+uv venv
+.venv\Scripts\Activate.ps1
+uv pip install -r requirements.txt
+uv pip install -e .              # makes `agents` (in server/agents) importable everywhere
+
+# 2. Configure environment variables
+copy .env.example .env
+# edit .env with your webcam index, weight, goal, etc.
+
+# 3. Launch the web app
+uv run python -m webapp.app
+```
+
+> If `Activate.ps1` is blocked, run PowerShell as Administrator once and execute
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then re-open your terminal.
+> Using Command Prompt instead of PowerShell? Activate with `.venv\Scripts\activate.bat`
+> and copy the env file with `copy .env.example .env` (same as above).
+
+</details>
 
 Then open **[http://localhost:5000](http://localhost:5000)** in your browser and press **Start**.
 See [Run](#run) below for the desktop (OpenCV window) alternative and full details on each option.
@@ -114,6 +150,9 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 
 ## Setup
 
+Requires Python 3.11+ — see [Requirements](#requirements).
+
+**macOS / Linux:**
 ```bash
 uv venv
 source .venv/bin/activate
@@ -124,10 +163,27 @@ uv pip install -r requirements.txt
 uv pip install -e .
 ```
 
+**Windows (PowerShell):**
+```powershell
+uv venv
+.venv\Scripts\Activate.ps1
+uv pip install -r requirements.txt
+
+# Editable install so `agents` (under server/agents) is importable from
+# main.py, webapp/, and the test suite without any path juggling
+uv pip install -e .
+```
+
 Create a local `.env` file in the project root:
 
 ```bash
+# macOS / Linux
 cp .env.example .env
+```
+
+```powershell
+# Windows
+copy .env.example .env
 ```
 
 Then edit `.env` as needed.
@@ -186,6 +242,8 @@ See [VOICE_IMPROVEMENTS.md](VOICE_IMPROVEMENTS.md) for detailed customization op
 ## Run
 
 Make sure you've completed [Setup](#setup) first (dependencies installed and `.env` created).
+The commands below (`uv run ...`) are identical on Windows, macOS, and Linux — just make sure
+the virtual environment created in [Setup](#setup) is activated first.
 
 ### Option 1: Web Frontend (recommended)
 
@@ -280,6 +338,10 @@ See [TESTING.md](TESTING.md) for detailed testing documentation.
 - The webcam flow requires local camera access and the packages in `requirements.txt`.
 - The web frontend (`webapp/app.py`) runs Flask's built-in development server, intended for
   local single-user use only; it is not hardened for production deployment.
+- **Windows:** `pyttsx3` uses the built-in SAPI5 voices, so voice feedback works out of the box
+  with no extra install. If the webcam doesn't open or is slow to start, try a different
+  `CAMERA_INDEX` in `.env` — OpenCV on Windows enumerates capture devices via DirectShow, which
+  can number them differently than on macOS/Linux.
 
 ### Rep-Counting Accuracy Tuning
 
