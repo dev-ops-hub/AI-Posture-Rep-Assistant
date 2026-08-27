@@ -2,6 +2,25 @@
 
 Python multi-agent workout tracker for squat rep counting, posture fault detection, and AI-generated coaching.
 
+## Quick Start
+
+```bash
+# 1. Install dependencies
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+
+# 2. Configure environment variables
+cp .env.example .env
+# edit .env with your webcam index, weight, goal, etc.
+
+# 3. Launch the web app
+uv run python -m webapp.app
+```
+
+Then open **[http://localhost:5000](http://localhost:5000)** in your browser and press **Start**.
+See [Run](#run) below for the desktop (OpenCV window) alternative and full details on each option.
+
 ## What It Does
 
 - Tracks squat reps locally with OpenCV, MediaPipe, and NumPy.
@@ -9,6 +28,8 @@ Python multi-agent workout tracker for squat rep counting, posture fault detecti
 - **Provides real-time voice feedback** during your workout.
 - Sends posture snapshots to an OpenAI vision agent when `OPENAI_API_KEY` is configured.
 - Generates a post-workout coaching summary at session end.
+- **Browser-based control panel** (Flask) with Start / Pause / Stop / Quit controls, a live
+  annotated video stream, live stats, and an end-of-session report with improvement tips.
 
 ## Multi-Agent Architecture
 
@@ -56,7 +77,8 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 | **Math & Geometry** | `numpy` | Vector operations for joint angle calculation |
 | **AI Coaching** | `openai` SDK | Multimodal form auditing and session summaries |
 | **Voice Feedback** | `pyttsx3` | Local offline text-to-speech for audio coaching |
-| **Testing** | `pytest`, `pytest-cov` | Unit testing with 76% code coverage |
+| **Web Frontend** | `Flask` | Browser control panel, REST API, and MJPEG video streaming |
+| **Testing** | `pytest`, `pytest-cov` | Unit testing with 74%+ code coverage |
 
 ## Project Layout
 
@@ -71,6 +93,11 @@ See [agent.md](agent.md) for detailed agent architecture specifications.
 │   ├── audit_agent.py
 │   ├── coach_agent.py
 │   └── voice_agent.py
+├── webapp/
+│   ├── app.py               # Flask server & REST API
+│   ├── session_manager.py   # Start/pause/resume/stop/quit state machine
+│   ├── templates/index.html
+│   └── static/{style.css, app.js}
 ├── agent.md
 ├── plan.md
 └── README.md
@@ -108,6 +135,7 @@ OPENAI_API_KEY=                # Enable AI audit/coach features
 VOICE_ENABLED=true             # Enable voice feedback
 VOICE_RATE=150                 # Speech rate in words per minute (100-200)
 VOICE_VOLUME=1.0               # Volume level (0.0 to 1.0)
+WEB_PORT=5000                  # Port for the web frontend (webapp/app.py)
 ```
 
 ### Voice Feedback
@@ -144,15 +172,56 @@ See [VOICE_IMPROVEMENTS.md](VOICE_IMPROVEMENTS.md) for detailed customization op
 
 ## Run
 
+Make sure you've completed [Setup](#setup) first (dependencies installed and `.env` created).
+
+### Option 1: Web Frontend (recommended)
+
+A browser-based control panel with **Start**, **Pause**, **Stop**, and **Quit** buttons, a live
+annotated video feed, live stats, and an end-of-session report.
+
+**Step 1 — Start the server:**
+```bash
+uv run python -m webapp.app
+```
+
+**Step 2 — Open the app:** navigate to [http://localhost:5000](http://localhost:5000) in your
+browser (the port can be changed with the `WEB_PORT` environment variable).
+
+**Step 3 — Control your workout:**
+
+| Button | Behavior |
+| :--- | :--- |
+| ▶ Start | Opens the webcam and begins rep/posture tracking |
+| ⏸ Pause / ▶ Resume | Freezes tracking and the elapsed timer without ending the session (toggles) |
+| ⏹ Stop | Ends the current workout, releases the camera, and shows the workout report |
+| ⏻ Quit | Stops any active session, releases camera/voice resources, shows the report (if a session was active), and **shuts down the Flask server process** |
+
+Optionally adjust camera index, body weight, fitness goal, and MET value from the
+"Session settings" panel before pressing Start.
+
+**Step 4 — Review your report:** after Stop/Quit, a report is shown with:
+- Summary: total reps, duration, calories burned, posture faults
+- **Things to improve**: heuristic tips (pace, posture faults, low rep count) plus the most
+  recent AI form-audit notes
+- AI coach summary (falls back to a deterministic summary if `OPENAI_API_KEY` is not set)
+
+The live video feed automatically fits the full camera frame (letterboxed if the aspect ratio
+doesn't match the panel) instead of cropping any part of the picture.
+
+Note: pressing **Quit** terminates the Flask process (equivalent to `Ctrl+C` in the terminal).
+Use **Stop** instead if you want to end a workout but keep the server running for another session.
+
+### Option 2: Desktop (OpenCV window)
+
 ```bash
 uv run main.py
 ```
 
-Press `q` to end the workout session and print the final coaching summary.
+Press `q` to end the workout session and print the final coaching summary in the terminal.
 
 ## Testing
 
-This project includes comprehensive unit tests with **74 passing tests** and **74% overall code coverage**.
+This project includes comprehensive unit tests with **80 passing tests** and **74% overall code coverage** (agents + main.py; `webapp/` is covered by its own dedicated test file).
 
 ### Coverage by Module
 
@@ -164,8 +233,9 @@ This project includes comprehensive unit tests with **74 passing tests** and **7
 | `agents/voice_agent.py` | 79% | 23 |
 | `agents/vision_agent.py` | 81% | 19 |
 | `main.py` | 28% | 5 |
+| `webapp/session_manager.py` | — | 6 |
 
-*Note: `main.py` requires webcam access for full testing coverage.*
+*Note: `main.py` requires webcam access for full testing coverage. `webapp/session_manager.py` tests mock the camera so they run without hardware.*
 
 ### Quick Verification
 
@@ -195,6 +265,8 @@ See [TESTING.md](TESTING.md) for detailed testing documentation.
 - The OpenAI-powered agents fall back to local deterministic feedback if `OPENAI_API_KEY` is not set.
 - Voice feedback uses the system's text-to-speech engine (offline, no API needed).
 - The webcam flow requires local camera access and the packages in `requirements.txt`.
+- The web frontend (`webapp/app.py`) runs Flask's built-in development server, intended for
+  local single-user use only; it is not hardened for production deployment.
 
 ### API Cost Estimates
 

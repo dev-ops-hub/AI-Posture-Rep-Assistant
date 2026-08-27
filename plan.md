@@ -54,7 +54,7 @@ This project implements a multi-agent AI system for real-time workout tracking, 
 ## 3. Project File Structure
 ```text
 AI-Posture-Rep-Assistant/
-├── main.py                # Main OpenCV loop and orchestrator
+├── main.py                # Main OpenCV loop and orchestrator (desktop mode)
 ├── requirements.txt       # Python dependencies
 ├── pyproject.toml         # Pytest configuration
 ├── verify_setup.py        # Component verification script
@@ -65,6 +65,15 @@ AI-Posture-Rep-Assistant/
 │   ├── audit_agent.py     # Agent 2: OpenAI vision audit with fallback
 │   ├── coach_agent.py     # Agent 3: session summary with fallback
 │   └── voice_agent.py     # Agent 4: real-time audio coaching
+├── webapp/                # Browser control panel (NEW)
+│   ├── __init__.py
+│   ├── app.py             # Flask routes: start/pause/stop/quit, status, MJPEG stream
+│   ├── session_manager.py # WorkoutSessionManager state machine wrapping the 4 agents
+│   ├── templates/
+│   │   └── index.html     # Start/Pause/Stop/Quit UI, live stats, report modal
+│   └── static/
+│       ├── style.css      # Dark theme, responsive video panel (object-fit: contain)
+│       └── app.js         # Polling, button handlers, report rendering
 ├── tests/
 │   ├── __init__.py
 │   ├── test_models.py     # Data model tests (6 tests)
@@ -72,13 +81,14 @@ AI-Posture-Rep-Assistant/
 │   ├── test_audit_agent.py  # Audit agent tests (9 tests)
 │   ├── test_coach_agent.py  # Coach agent tests (12 tests)
 │   ├── test_voice_agent.py  # Voice agent tests (23 tests)
-│   └── test_main.py       # HUD rendering tests (5 tests)
+│   ├── test_main.py       # HUD rendering tests (5 tests)
+│   └── test_webapp_session_manager.py # Web session lifecycle tests (6 tests, NEW)
 ├── .env.example           # Environment configuration template
 ├── .gitignore             # Git ignore patterns
 ├── agent.md               # Agent architecture documentation
 ├── plan.md                # This file - implementation plan
 ├── README.md              # Project overview and setup
-├── TESTING.md             # Testing documentation
+├── TESTING.md              # Testing documentation
 ├── VOICE_FEATURES.md      # Voice feedback documentation
 └── VOICE_IMPROVEMENTS.md  # Voice clarity improvements
 ```
@@ -127,14 +137,33 @@ AI-Posture-Rep-Assistant/
 - [x] Create verification script for quick component testing.
 - [x] Document testing procedures and patterns.
 
+### Task 8: Web Frontend & Session Orchestration (NEW)
+- [x] Build `webapp/session_manager.py`: a thread-safe `WorkoutSessionManager` state machine
+      (`idle → running ⇄ paused → stopped/closed`) that reuses `VisionAgent`, `FormAuditAgent`,
+      `FitnessCoachAgent`, and `VoiceAgent` inside a background capture thread.
+- [x] Build `webapp/app.py`: Flask routes for `/api/start`, `/api/pause` (toggle), `/api/stop`,
+      `/api/quit`, `/api/status` (polling), and `/video_feed` (MJPEG stream of annotated frames).
+- [x] Build the browser UI (`webapp/templates/index.html`, `webapp/static/app.js`,
+      `webapp/static/style.css`) with **Start / Pause / Stop / Quit** buttons, live stats, and a
+      report modal shown after Stop/Quit.
+- [x] Generate a workout report on Stop/Quit: total reps, duration, calories, posture faults, an
+      AI coach summary, and heuristic "things to improve" tips (pace, faults, low rep count, and
+      recent AI form-audit notes).
+- [x] Fix the video panel to display the **entire camera frame** (`object-fit: contain`) instead
+      of cropping it.
+- [x] Make **Quit** fully shut down the Flask server process (`os.kill(pid, SIGINT)` after
+      releasing camera/voice resources), not just end the workout session.
+- [x] Add `tests/test_webapp_session_manager.py` (6 tests) covering the full lifecycle with a
+      mocked camera.
+
 ---
 
 ## 5. Testing Infrastructure
 
 ### Test Coverage Summary
-- **Total Tests:** 74 passing
-- **Overall Coverage:** 74%
-- **Test Files:** 6 (models, vision, audit, coach, voice, main)
+- **Total Tests:** 80 passing
+- **Overall Coverage:** 74% (`agents/` + `main.py`; `webapp/` has its own dedicated test file)
+- **Test Files:** 7 (models, vision, audit, coach, voice, main, webapp session manager)
 
 ### Module Coverage Breakdown
 | Module | Coverage | Tests | Status |
@@ -146,6 +175,7 @@ AI-Posture-Rep-Assistant/
 | agents/voice_agent.py | 79% | 23 | ✅ Complete |
 | agents/vision_agent.py | 81% | 19 | ✅ Complete |
 | main.py | 28% | 5 | ⚠️ Partial (webcam required) |
+| webapp/session_manager.py | — | 6 | ✅ Complete (mocked camera) |
 
 ### Running Tests
 ```bash
@@ -154,6 +184,9 @@ uv run pytest tests/ -v
 
 # Run with coverage
 uv run pytest tests/ --cov=agents --cov=main
+
+# Run only the web frontend tests
+uv run pytest tests/test_webapp_session_manager.py -v
 
 # Verify setup (no webcam needed)
 uv run python verify_setup.py
@@ -186,6 +219,32 @@ VOICE_VOLUME=1.0          # Volume (0.0-1.0)
 
 ---
 
+## 6b. Web Frontend (NEW)
+
+### Features
+1. **Start / Pause / Resume / Stop / Quit controls** driven from the browser via `webapp/app.py`.
+2. **Live video stream** (`/video_feed`, MJPEG) showing the annotated frame with rep/posture HUD, sized with `object-fit: contain` so the full camera frame is always visible (no cropping).
+3. **Live stats panel** polled every ~800ms via `/api/status` (reps, elapsed time, posture faults, knee/spine angles, latest AI form note).
+4. **End-of-session report modal** shown after Stop or Quit: total reps, duration, calories, posture faults, AI coach summary, and heuristic "things to improve" tips.
+5. **Quit fully terminates the server process** (not just the workout session) via `os.kill(os.getpid(), signal.SIGINT)`, dispatched from a background thread shortly after the response is sent so the client still receives confirmation.
+
+### Running
+```bash
+uv run python -m webapp.app
+# open http://localhost:5000
+```
+
+### Architecture
+- **Flask routes** (`webapp/app.py`): thin HTTP layer over `WorkoutSessionManager`.
+- **`WorkoutSessionManager`** (`webapp/session_manager.py`): thread-safe state machine
+  (`idle → running ⇄ paused → stopped/closed`) that owns a background capture thread driving
+  `VisionAgent.process_frame()`, dispatches `FormAuditAgent` calls on a `ThreadPoolExecutor`,
+  and triggers `VoiceAgent` announcements — mirroring the same agent pipeline as `main.py`.
+- **Frontend** (`webapp/templates/index.html`, `webapp/static/{app.js,style.css}`): vanilla
+  JS polling + fetch calls, no build step required.
+
+---
+
 ## 7. Environment Configuration
 
 ### Required Variables
@@ -202,6 +261,11 @@ CAMERA_INDEX=0            # Webcam device index
 VOICE_ENABLED=true        # Enable voice feedback
 VOICE_RATE=150            # Speech rate (100-200 WPM)
 VOICE_VOLUME=1.0          # Volume level (0.0-1.0)
+```
+
+### Web Frontend Variables (Optional, NEW)
+```bash
+WEB_PORT=5000              # Port for webapp/app.py (Flask dev server)
 ```
 
 ---
@@ -243,8 +307,12 @@ cp .env.example .env
 # Verify setup (no webcam)
 uv run python verify_setup.py
 
-# Run application with webcam
+# Run desktop app with webcam (OpenCV window)
 uv run main.py
+
+# Run the web frontend (Start/Pause/Stop/Quit browser control panel)
+uv run python -m webapp.app
+# then open http://localhost:5000
 
 # Run tests
 uv run pytest tests/ -v
