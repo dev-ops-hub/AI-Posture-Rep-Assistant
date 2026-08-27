@@ -44,16 +44,47 @@ This application uses a hybrid edge-cloud **Python Multi-Agent Architecture** wi
   5. Emit posture violation events and telemetry to other agents.
 * **Execution Trigger:** Continuous frame loop (`while cap.isOpened()`).
 * **Cost:** **$0.00** (Runs locally on CPU).
-* **Test Coverage:** 81% (19 tests covering angle math, rep counting, posture detection).
+* **Test Coverage:** 87% (28 tests covering angle math, rep counting, posture detection, and the rep-counting robustness improvements below).
 
 #### Key Methods
 - `process_frame()`: Main processing pipeline returning annotated frame, metrics, and violation events
-- `_angle()`: Calculate angle between three points using vector math
+- `_estimate_knee_angle()`: Combines both legs' knee angles (visibility-gated, see below) into one robust reading
+- `_smooth_knee_angle()`: Exponential-moving-average filter applied before the reading reaches the rep FSM
+- `_leg_knee_angle()`: Computes one leg's knee angle plus its minimum landmark visibility
+- `_angle()`: Calculate the angle between three 2D/3D points via the vector dot-product formula
 - `_spine_angle()`: Calculate spine deviation from vertical
-- `_update_rep_state()`: Finite state machine for rep counting
+- `_update_rep_state()`: Finite state machine for rep counting (now with a minimum inter-rep cooldown)
 - `_update_posture_state()`: Track sustained posture violations
 
+#### Rep-Counting Accuracy Improvements (NEW)
+Real-world testing showed the original single-frame, left-leg-only, unsmoothed knee angle could
+mis-count reps whenever MediaPipe's per-frame landmark jitter or a partially occluded leg pushed
+the raw angle across the 90°/160° thresholds without an actual squat occurring. The following
+changes were made to `vision_agent.py`, all covered by new unit tests and verified not to change
+the previously-tested FSM transition behavior:
+
+1. **Dual-leg averaging with visibility gating** (`_estimate_knee_angle` / `_leg_knee_angle`) — the
+   knee angle is now computed from both legs (using MediaPipe's per-landmark `visibility` score,
+   thresholded by `min_landmark_visibility`, default `0.5`) and averaged when both are reliable,
+   falling back to whichever single leg is visible, or holding the last known smoothed angle if
+   neither leg is trustworthy that frame (e.g. stepped out of frame, occluded by an arm).
+2. **3D angle calculation** — `_angle()` now uses the vector dot-product/arccos formula on
+   `(x, y, z)` landmark coordinates (MediaPipe's estimated depth) instead of a 2D-only
+   `atan2`-based formula, making the reading less sensitive to the user's exact orientation
+   relative to the camera.
+3. **Exponential moving-average smoothing** (`_smooth_knee_angle`, weight `knee_angle_smoothing`,
+   default `0.4`) — filters per-frame landmark jitter before it ever reaches the rep state
+   machine, so a single noisy/occluded-landmark frame can no longer flip the FSM into `BOTTOM` or
+   `STANDING` on its own.
+4. **Minimum inter-rep cooldown** (`min_rep_interval_sec`, default `0.3s`) — a defense-in-depth
+   guard inside `_update_rep_state()` that prevents two rep counts firing in rapid succession if
+   the smoothed angle still oscillates right at the standing threshold.
+5. **Configurable thresholds** — `standing_angle_threshold_deg` (default `160°`) and
+   `bottom_angle_threshold_deg` (default `90°`) are now constructor parameters instead of magic
+   numbers, so depth requirements can be tuned per user/exercise without editing the code.
+
 ---
+
 
 ### Agent 2: Form Audit Agent
 * **Runtime Environment:** Cloud API via Python SDK (`audit_agent.py`).
@@ -246,8 +277,8 @@ class SessionSummaryPayload:
 ## 4. Testing Infrastructure
 
 ### Test Suite Overview
-- **Total Tests:** 80
-- **Overall Coverage:** 74% (`agents/` package under `server/agents/`, plus `main.py`; `webapp/` has its own dedicated test file)
+- **Total Tests:** 89
+- **Overall Coverage:** 77% (`agents/` package under `server/agents/`, plus `main.py`; `webapp/` has its own dedicated test file)
 - **Test Framework:** pytest with pytest-cov and pytest-mock
 
 ### Per-Agent Test Coverage
@@ -255,7 +286,7 @@ class SessionSummaryPayload:
 | Agent | Tests | Coverage | Key Test Areas |
 |-------|-------|----------|----------------|
 | Models | 6 | 100% | Data classes, serialization, rounding |
-| Vision Agent | 19 | 81% | Angle math, rep FSM, posture detection |
+| Vision Agent | 28 | 87% | Angle math, rep FSM, posture detection, dual-leg averaging, visibility gating, EMA smoothing, rep-interval debounce |
 | Audit Agent | 9 | 100% | API integration, fallback logic |
 | Coach Agent | 12 | 100% | Calorie calc, summaries, API integration |
 | Voice Agent | 23 | 79% | TTS control, speech queue, announcements |
