@@ -163,15 +163,13 @@ class VisionAgent:
         standing = self.standing_angle_threshold_deg
         bottom = self.bottom_angle_threshold_deg
 
-        if knee_angle > standing and self.state in {SquatState.ASCENDING, SquatState.BOTTOM}:
-            self.reps += 1
-            self.state = SquatState.STANDING
-            return
         if knee_angle > standing:
+            if self.state in {SquatState.ASCENDING, SquatState.BOTTOM}:
+                self.reps += 1
             self.state = SquatState.STANDING
         elif knee_angle < bottom:
             self.state = SquatState.BOTTOM
-        elif self.state == SquatState.BOTTOM and knee_angle >= bottom:
+        elif self.state in {SquatState.BOTTOM, SquatState.ASCENDING}:
             self.state = SquatState.ASCENDING
         else:
             self.state = SquatState.DESCENDING
