@@ -167,7 +167,10 @@ class WorkoutSessionManager:
                 return {"ok": False, "error": self._error}
 
             self._cap = cap
-            self._vision_agent = VisionAgent()
+            self._vision_agent = VisionAgent(
+                standing_angle_threshold_deg=float(os.getenv("SQUAT_STANDING_ANGLE_DEG", "160")),
+                bottom_angle_threshold_deg=float(os.getenv("SQUAT_BOTTOM_ANGLE_DEG", "110")),
+            )
             self._voice_agent = VoiceAgent()
             self._audit_notes = []
             self._latest_note = ""

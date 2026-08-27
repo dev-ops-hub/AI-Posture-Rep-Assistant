@@ -35,8 +35,13 @@ def main() -> None:
     goal = os.getenv("FITNESS_GOAL", "general fitness")
     met_value = float(os.getenv("WORKOUT_MET", "5.0"))
     camera_index = int(os.getenv("CAMERA_INDEX", "0"))
+    standing_angle_threshold_deg = float(os.getenv("SQUAT_STANDING_ANGLE_DEG", "160"))
+    bottom_angle_threshold_deg = float(os.getenv("SQUAT_BOTTOM_ANGLE_DEG", "110"))
 
-    vision_agent = VisionAgent()
+    vision_agent = VisionAgent(
+        standing_angle_threshold_deg=standing_angle_threshold_deg,
+        bottom_angle_threshold_deg=bottom_angle_threshold_deg,
+    )
     audit_agent = FormAuditAgent()
     coach_agent = FitnessCoachAgent()
     voice_agent = VoiceAgent()
