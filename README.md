@@ -1,4 +1,4 @@
-# Posture-AI-Coach-Assistant
+# Posture-AI-Assistant
 
 # Author: Alex Chan 
 
