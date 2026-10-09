@@ -1,5 +1,7 @@
 # AI-Posture-Rep-Assistant
 
+# Author: Alex Chan 
+
 Python multi-agent workout tracker for squat rep counting, posture fault detection, and AI-generated coaching.
 
 ## Requirements
